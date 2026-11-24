@@ -1,0 +1,18 @@
+{
+  "name": "true-intellect-test",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=web",
+    "dev:api": "npm run dev --workspace=api",
+    "build": "npm run build --workspaces",
+    "db:setup": "npm run db:migrate --workspace=api && npm run db:seed --workspace=api",
+    "test": "npm run db:setup && npm run test --workspace=api"
+  }
+}
