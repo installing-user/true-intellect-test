@@ -1,0 +1,45 @@
+.btn {
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn-secondary,
+button.secondary {
+  background: var(--button-secondary-bg);
+  border: var(--button-secondary-border);
+  color: var(--color-ink);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-ink);
+}
+
+.btn-secondary:not(:disabled):hover,
+button.secondary:not(:disabled):hover,
+.btn-ghost:not(:disabled):hover {
+  background: var(--color-inset);
+}
+
+.btn-sm {
+  min-height: var(--target-min);
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-link {
+  min-height: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1.5px;
+}

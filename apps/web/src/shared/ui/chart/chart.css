@@ -1,0 +1,83 @@
+.chart {
+  min-width: 0;
+}
+
+.chart svg {
+  display: block;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart svg:focus-visible {
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.chart-grid {
+  stroke: var(--chart-grid);
+}
+
+.chart-tick {
+  fill: var(--color-text-2);
+  font-size: 12px;
+}
+
+.chart-area {
+  fill: var(--chart-area);
+  animation: fade-in 400ms ease-out 160ms backwards;
+}
+
+.chart-pop {
+  animation: fade-in var(--duration-hover) ease-out;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  animation: chart-draw var(--duration-draw) ease-out;
+}
+
+@keyframes chart-draw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-cursor {
+  stroke: var(--chart-line);
+  stroke-dasharray: 3 4;
+}
+
+.chart-point {
+  fill: var(--chart-point);
+  stroke: var(--chart-line);
+  stroke-width: 2;
+}
+
+.chart-tip {
+  fill: var(--chart-tooltip-bg);
+}
+
+.chart-tip-date {
+  fill: #d5d8d1;
+  font-size: 12px;
+}
+
+.chart-tip-value {
+  fill: var(--chart-tooltip-text);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.chart-tip-unit {
+  font-weight: 500;
+  font-size: 13px;
+}
