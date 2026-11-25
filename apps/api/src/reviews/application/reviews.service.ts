@@ -15,13 +15,16 @@ export class ReviewsService {
 
   async list(user: SessionUser, requested: ScopeRequest, filter: ReviewFilter) {
     const scope = await this.access.resolveScope(user, requested);
+
     return this.reviews.list(scope, filter);
   }
 
   async changeStatus(user: SessionUser, reviewId: number, status: ReviewStatus) {
     const scope = await this.access.resolveScope(user, {});
     const review = await this.reviews.updateStatus(reviewId, status, scope.companyId);
+
     if (!review) throw new NotFoundException('Отзыв не найден');
+
     return review;
   }
 }

@@ -9,8 +9,8 @@
     "start": "node --env-file=../../.env dist/main.js",
     "db:migrate": "node --env-file-if-exists=../../.env db/migrate.ts",
     "db:seed": "node --env-file-if-exists=../../.env db/seed.ts",
-    "test:dist": "node --env-file-if-exists=../../.env --test \"test/*.test.ts\"",
-    "test": "tsc -p tsconfig.json --outDir dist-test && node --env-file-if-exists=../../.env --env-file=test/dist-test.env --test \"test/*.test.ts\""
+    "test:dist": "node --env-file-if-exists=../../.env --test test/isolation.test.ts test/auth.test.ts test/analytics.test.ts test/token-bucket.test.ts",
+    "test": "tsc -p tsconfig.json --outDir dist-test && tsc -p tsconfig.scripts.json && node --env-file-if-exists=../../.env --env-file=test/dist-test.env --test \"test/*.test.ts\""
   },
   "dependencies": {
     "@nestjs/common": "12.6.0",
@@ -24,6 +24,10 @@
     "@nestjs/cli": "12.0.15",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.0.0",
-    "typescript": "5.9.3"
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "contracts": "0.1.0",
+    "typescript": "5.9.3",
+    "yaml": "2.9.1"
   }
 }

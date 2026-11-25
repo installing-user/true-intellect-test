@@ -12,6 +12,7 @@ export class UserRepository {
        FROM users WHERE email = $1`,
       [email],
     );
+
     return row;
   }
 }

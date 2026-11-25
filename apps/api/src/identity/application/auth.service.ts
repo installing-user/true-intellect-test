@@ -1,5 +1,5 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
-import { LoginAttempts } from '../domain/login-attempts.js';
+import { HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { TokenBucket } from '../domain/token-bucket.js';
 import { SessionUser } from '../domain/session-user.js';
 import { hashPassword, verifyPassword } from '../infrastructure/password.js';
 import { createSessionToken, hashSessionToken } from '../infrastructure/session-token.js';
@@ -7,6 +7,8 @@ import { SessionRepository } from '../infrastructure/session.repository.js';
 import { UserRepository } from '../infrastructure/user.repository.js';
 
 export const SESSION_SECONDS = 7 * 24 * 60 * 60;
+export const IP_LOGIN_LIMIT = Symbol('IP_LOGIN_LIMIT');
+export const ACCOUNT_LOGIN_LIMIT = Symbol('ACCOUNT_LOGIN_LIMIT');
 
 // unknown emails still pay for one scrypt so response time does not reveal which emails exist
 const dummyHash = hashPassword('dummy-password');
@@ -22,25 +24,29 @@ export class AuthService {
   constructor(
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
-    private readonly attempts: LoginAttempts,
+    @Inject(IP_LOGIN_LIMIT) private readonly ipLimit: TokenBucket,
+    @Inject(ACCOUNT_LOGIN_LIMIT) private readonly accountLimit: TokenBucket,
   ) {}
 
   async login(email: string, password: string, ip: string): Promise<{ user: SessionUser; token: string }> {
     const normalized = email.trim().toLowerCase();
-    const key = `${normalized}|${ip}`;
-    const retryAfter = this.attempts.retryAfterSeconds(key);
+    const retryAfter = Math.max(this.ipLimit.retryAfterSeconds(ip), this.accountLimit.retryAfterSeconds(normalized));
+
     if (retryAfter > 0) throw new TooManyLoginAttemptsException(retryAfter);
 
     const row = await this.users.findByEmail(normalized);
     const valid = await verifyPassword(password, row?.passwordHash ?? (await dummyHash));
+
     if (!row || !valid) {
-      this.attempts.fail(key);
+      this.ipLimit.take(ip);
+      this.accountLimit.take(normalized);
       throw new UnauthorizedException('Неверный email или пароль');
     }
-    this.attempts.reset(key);
 
     const token = createSessionToken();
+
     await this.sessions.create(hashSessionToken(token), row.id, SESSION_SECONDS);
+
     return { user: { id: row.id, email: row.email, role: row.role, companyId: row.companyId }, token };
   }
 

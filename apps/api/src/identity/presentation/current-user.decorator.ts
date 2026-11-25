@@ -3,6 +3,7 @@ import { SessionUser } from '../domain/session-user.js';
 
 export interface AuthRequest {
   method: string;
+  secure: boolean;
   headers: Record<string, string | string[] | undefined> & { cookie?: string };
   user?: SessionUser;
 }

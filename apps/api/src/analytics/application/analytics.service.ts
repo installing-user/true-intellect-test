@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SessionUser } from '../../identity/domain/session-user.js';
+import { SessionUser } from 'contracts';
 import { createPeriod } from '../../shared/domain/period.js';
 import { AccessService } from '../../tenancy/application/access.service.js';
 import { ScopeRequest } from '../../tenancy/domain/scope.js';
@@ -20,6 +20,7 @@ export class AnalyticsService {
       this.analytics.timeseries(scope, period),
       this.analytics.reviewStats(scope, period),
     ]);
+
     return { period, summary: summarize(timeseries, reviews), timeseries };
   }
 }

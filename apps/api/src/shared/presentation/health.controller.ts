@@ -11,6 +11,7 @@ export class HealthController {
   async getStatus() {
     try {
       await this.database.ping();
+
       return { status: 'ok', database: 'ok' };
     } catch {
       throw new ServiceUnavailableException({

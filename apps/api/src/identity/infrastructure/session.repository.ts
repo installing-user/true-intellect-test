@@ -26,6 +26,7 @@ export class SessionRepository {
        WHERE s.token_hash = $1 AND s.expires_at > now()`,
       [tokenHash],
     );
+
     return user;
   }
 }

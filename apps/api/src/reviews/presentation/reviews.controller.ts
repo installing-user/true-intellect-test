@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Get, Param, ParseEnumPipe, Patch, Query } from '@nestjs/common';
+import type { Review, ReviewPage, UpdateReviewStatusRequest } from 'contracts';
 import { SessionUser } from '../../identity/domain/session-user.js';
 import { CurrentUser } from '../../identity/presentation/current-user.decorator.js';
 import { Period } from '../../shared/domain/period.js';
@@ -29,7 +30,7 @@ export class ReviewsController {
     @Query(new ParsePeriodPipe(true)) period: Period | null,
     @Query('limit', new ParseIntRangePipe(1, 100)) limit: number | undefined,
     @Query('offset', new ParseIntRangePipe(0, MAX_INT)) offset: number | undefined,
-  ) {
+  ): Promise<ReviewPage> {
     return this.reviews.list(
       user,
       { companyId, branchId },
@@ -41,8 +42,8 @@ export class ReviewsController {
   updateStatus(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIdPipe) id: number,
-    @Body('status', parseStatus(false)) status: ReviewStatus,
-  ) {
+    @Body('status', parseStatus(false)) status: UpdateReviewStatusRequest['status'],
+  ): Promise<Review> {
     return this.reviews.changeStatus(user, id, status);
   }
 }

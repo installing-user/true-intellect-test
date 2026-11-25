@@ -25,6 +25,7 @@ export class DatabaseService implements OnApplicationShutdown {
 
   async query<T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]): Promise<T[]> {
     const result = await this.pool.query<T>(text, params);
+
     return result.rows;
   }
 

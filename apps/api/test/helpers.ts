@@ -28,12 +28,16 @@ export interface ApiResponse {
 
 export async function startApp() {
   const app = await NestFactory.create(AppModule, { logger: false });
+
   configureApp(app);
   await app.listen(0, '127.0.0.1');
   const { port } = app.getHttpServer().address() as AddressInfo;
   const baseUrl = `http://127.0.0.1:${port}`;
 
-  async function request(path: string, { cookie, method = 'GET', body, headers = {} }: RequestOptions = {}): Promise<ApiResponse> {
+  async function request(
+    path: string,
+    { cookie, method = 'GET', body, headers = {} }: RequestOptions = {},
+  ): Promise<ApiResponse> {
     const json = body !== undefined && typeof body !== 'string';
     const res = await fetch(baseUrl + path, {
       method,
@@ -45,12 +49,15 @@ export async function startApp() {
       body: json ? JSON.stringify(body) : (body as string | undefined),
     });
     const text = await res.text();
+
     return { status: res.status, body: text ? JSON.parse(text) : null, headers: res.headers };
   }
 
   async function login(email: string, password = DEMO_PASSWORD): Promise<string> {
     const res = await request('/auth/login', { method: 'POST', body: { email, password } });
+
     if (res.status !== 200) throw new Error(`login ${email} failed: ${res.status}`);
+
     return res.headers.get('set-cookie')!.split(';')[0];
   }
 

@@ -8,7 +8,9 @@ export function assertSafeWrite(request: AuthRequest): void {
   if (SAFE_METHODS.has(request.method)) return;
   if (request.headers['sec-fetch-site'] === 'cross-site') throw new ForbiddenException('Межсайтовый запрос отклонён');
   const type = request.headers['content-type'];
-  const hasBody = type !== undefined || Number(request.headers['content-length'] ?? 0) > 0 || 'transfer-encoding' in request.headers;
+  const hasBody =
+    type !== undefined || Number(request.headers['content-length'] ?? 0) > 0 || 'transfer-encoding' in request.headers;
+
   if (hasBody && !/^application\/json\s*(;|$)/i.test(String(type ?? ''))) {
     throw new UnsupportedMediaTypeException('Допустим только application/json');
   }
