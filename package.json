@@ -6,13 +6,34 @@
     "node": ">=24 <25"
   },
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run dev --workspace=api",
     "build": "npm run build --workspaces",
     "db:setup": "npm run db:migrate --workspace=api && npm run db:seed --workspace=api",
-    "test": "npm run db:setup && npm run test --workspace=api"
+    "test": "npm run db:setup && npm run test --workspace=api",
+    "test:e2e": "node e2e/obscura-install.mts && playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev:mocks": "npm run dev:mocks --workspace=web",
+    "build:mocks": "npm run build:mocks --workspace=web",
+    "start:mocks": "npm run start:mocks --workspace=web"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.4.6",
+    "@playwright/test": "1.65.1",
+    "@stylistic/eslint-plugin": "6.0.1",
+    "eslint": "10.15.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "jiti": "2.7.0",
+    "prettier": "3.10.1",
+    "typescript-eslint": "8.74.0"
   }
 }

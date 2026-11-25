@@ -1,0 +1,9 @@
+package-lock.json
+docs/
+openspec/
+.claude/
+apps/api/dist-test/
+e2e/.auth/
+e2e/.results/
+packages/contracts/src/openapi.d.ts
+apps/web/public/mockServiceWorker.js
