@@ -1,0 +1,67 @@
+name: true-intellect-test
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${PGDATABASE:?Set PGDATABASE in .env}
+      POSTGRES_USER: ${PGUSER:?Set PGUSER in .env}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PGPORT:?Set PGPORT in .env}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 3101
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${PGUSER:?Set PGUSER in .env}
+      PGPASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
+      PGDATABASE: ${PGDATABASE:?Set PGDATABASE in .env}
+    restart: unless-stopped
+    command: ["sh", "-c", "node db/migrate.ts && node db/seed.ts --if-empty && exec node dist/main.js"]
+    ports:
+      - "127.0.0.1:3101:3101"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3101/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        API_ORIGIN: http://api:3101
+    environment:
+      API_ORIGIN: http://api:3101
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3100"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
