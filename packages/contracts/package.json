@@ -1,0 +1,19 @@
+{
+  "name": "contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-typescript openapi.yaml -o src/openapi.d.ts",
+    "build": "openapi-typescript openapi.yaml -o src/openapi.d.ts --check && tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0"
+  }
+}

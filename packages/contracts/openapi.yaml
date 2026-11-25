@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: Истинный интеллект — API кабинета
+  version: 0.1.0
+  description: >-
+    REST API аналитического кабинета. Браузер обращается к нему через прокси Next.js по префиксу /api.
+    Сессия — HttpOnly cookie sid. Небезопасные методы принимают только application/json и отклоняют
+    Sec-Fetch-Site cross-site.
+servers:
+  - url: /api
+security:
+  - session: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: API и база доступны.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: База недоступна.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /auth/login:
+    post:
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Вход выполнен, cookie sid установлена.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionUser' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/logout:
+    post:
+      operationId: logout
+      responses:
+        '204':
+          description: Сессия удалена, cookie сброшена.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /auth/me:
+    get:
+      operationId: getMe
+      responses:
+        '200':
+          description: Текущий пользователь.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /companies:
+    get:
+      operationId: listCompanies
+      description: Администратор видит все компании, клиент — только свою.
+      responses:
+        '200':
+          description: Доступные компании.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Company' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /branches:
+    get:
+      operationId: listBranches
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Компания; чужая или несуществующая даёт 404.
+          schema: { type: integer, minimum: 1, maximum: 2147483647 }
+      responses:
+        '200':
+          description: Доступные филиалы.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Branch' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /analytics:
+    get:
+      operationId: getAnalytics
+      description: >-
+        Сводка и динамика за период. Без to период заканчивается последним днём с данными, без from — 30 дней.
+        Период не длиннее 366 дней, даты в пределах 2000-01-01..2100-12-31.
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Компания; чужая или несуществующая даёт 404.
+          schema: { type: integer, minimum: 1, maximum: 2147483647 }
+        - name: branchId
+          in: query
+          required: false
+          description: Филиал; чужой или несуществующий даёт 404.
+          schema: { type: integer, minimum: 1, maximum: 2147483647 }
+        - name: from
+          in: query
+          required: false
+          description: Первый день периода (UTC, включительно).
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: false
+          description: Последний день периода (UTC, включительно).
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Отчёт по доступным филиалам.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AnalyticsReport' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /reviews:
+    get:
+      operationId: listReviews
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Компания; чужая или несуществующая даёт 404.
+          schema: { type: integer, minimum: 1, maximum: 2147483647 }
+        - name: branchId
+          in: query
+          required: false
+          description: Филиал; чужой или несуществующий даёт 404.
+          schema: { type: integer, minimum: 1, maximum: 2147483647 }
+        - name: rating
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 5 }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/ReviewStatus' }
+        - name: from
+          in: query
+          required: false
+          description: Первый день периода (UTC, включительно).
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: false
+          description: Последний день периода (UTC, включительно).
+          schema: { type: string, format: date }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, maximum: 2147483647, default: 0 }
+      responses:
+        '200':
+          description: Страница отзывов, новые первыми.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /reviews/{id}:
+    patch:
+      operationId: updateReviewStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 2147483647 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateReviewStatusRequest' }
+      responses:
+        '200':
+          description: Обновлённый отзыв.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: sid
+  responses:
+    BadRequest:
+      description: Неверные параметры.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Нет действующей сессии или неверные email и пароль.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Межсайтовый запрос отклонён.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Объект не найден или недоступен пользователю.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnsupportedMediaType:
+      description: Тело запроса не application/json.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooManyRequests:
+      description: Исчерпан лимит неудачных входов с этого IP.
+      headers:
+        Retry-After:
+          description: Через сколько секунд появится попытка.
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode: { type: integer }
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items: { type: string }
+        error: { type: string }
+    Health:
+      type: object
+      required: [status, database]
+      properties:
+        status: { type: string, enum: [ok] }
+        database: { type: string, enum: [ok] }
+    Role:
+      type: string
+      enum: [admin, client]
+    SessionUser:
+      type: object
+      required: [id, email, role, companyId]
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+        companyId: { type: [integer, 'null'] }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+    Company:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    Branch:
+      type: object
+      required: [id, companyId, name, address]
+      properties:
+        id: { type: integer }
+        companyId: { type: integer }
+        name: { type: string }
+        address: { type: string }
+    Period:
+      type: object
+      description: Календарные дни в UTC, обе границы включительно.
+      required: [from, to]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+    Counter:
+      type: string
+      enum: [views, siteClicks, calls, routes]
+    DayMetrics:
+      type: object
+      required: [date, views, siteClicks, calls, routes]
+      properties:
+        date: { type: string, format: date }
+        views: { type: integer }
+        siteClicks: { type: integer }
+        calls: { type: integer }
+        routes: { type: integer }
+    ReviewStats:
+      type: object
+      required: [avgRating, reviewsCount]
+      properties:
+        avgRating: { type: [number, 'null'] }
+        reviewsCount: { type: integer }
+    AnalyticsSummary:
+      type: object
+      required: [views, siteClicks, calls, routes, avgRating, reviewsCount]
+      properties:
+        views: { type: integer }
+        siteClicks: { type: integer }
+        calls: { type: integer }
+        routes: { type: integer }
+        avgRating: { type: [number, 'null'] }
+        reviewsCount: { type: integer }
+    AnalyticsReport:
+      type: object
+      required: [period, summary, timeseries]
+      properties:
+        period: { $ref: '#/components/schemas/Period' }
+        summary: { $ref: '#/components/schemas/AnalyticsSummary' }
+        timeseries:
+          type: array
+          items: { $ref: '#/components/schemas/DayMetrics' }
+    ReviewStatus:
+      type: string
+      enum: [new, in_progress, done]
+    Review:
+      type: object
+      required: [id, branchId, branchName, authorName, rating, text, status, publishedAt]
+      properties:
+        id: { type: integer }
+        branchId: { type: integer }
+        branchName: { type: string }
+        authorName: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        text: { type: string }
+        status: { $ref: '#/components/schemas/ReviewStatus' }
+        publishedAt: { type: string, format: date-time }
+    ReviewPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Review' }
+        total: { type: integer }
+    UpdateReviewStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/ReviewStatus' }
