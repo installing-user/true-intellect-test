@@ -15,15 +15,15 @@ export function ReviewCard({ review, actions }: { review: Review; actions?: Reac
       </div>
       <div className="review-card-meta">
         <span className="review-card-stars" role="img" aria-label={`Оценка ${review.rating} из 5`}>
-          {[1, 2, 3, 4, 5].map((n) => (
+          {[1, 2, 3, 4, 5].map((star) => (
             <svg
-              key={n}
-              className={n <= review.rating ? undefined : 'review-card-star-off'}
+              key={star}
+              className={star <= review.rating ? undefined : 'review-card-star-off'}
               aria-hidden="true"
               viewBox="0 0 24 24"
               width="18"
               height="18"
-              fill={n <= review.rating ? 'currentColor' : 'none'}
+              fill={star <= review.rating ? 'currentColor' : 'none'}
               stroke="currentColor"
               strokeWidth="1.6"
               strokeLinejoin="round"

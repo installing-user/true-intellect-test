@@ -7,7 +7,11 @@ export function Skeleton({ className, ...props }: ComponentPropsWithoutRef<'span
 
 export function SkeletonRegion({ className, children, ...props }: ComponentPropsWithoutRef<'div'>) {
   return (
-    <div className={className ? `skeleton-region skeleton-delay ${className}` : 'skeleton-region skeleton-delay'} aria-busy="true" {...props}>
+    <div
+      className={className ? `skeleton-region skeleton-delay ${className}` : 'skeleton-region skeleton-delay'}
+      aria-busy="true"
+      {...props}
+    >
       <span className="sr-only">Загрузка…</span>
       {children}
     </div>

@@ -336,7 +336,13 @@
 .skel-chart-plot {
   position: relative;
   border-top: 1px solid var(--chart-grid);
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 61px, var(--chart-grid) 61px, var(--chart-grid) 62px);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 61px,
+    var(--chart-grid) 61px,
+    var(--chart-grid) 62px
+  );
 }
 
 .skel-chart-area {

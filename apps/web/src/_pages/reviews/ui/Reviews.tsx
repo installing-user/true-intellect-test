@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useBranches } from '@/entities/branch';
 import { useCompanies } from '@/entities/company';
-import { ReviewCard, type ReviewStatus, statusLabel, useReviews } from '@/entities/review';
+import { ReviewCard, useReviews } from '@/entities/review';
 import { useSession } from '@/entities/session';
 import { ReviewStatusSelect } from '@/features/change-review-status';
 import { useUrlFilters } from '@/shared/lib';
@@ -12,18 +12,9 @@ import { DataState, EmptyState } from '@/shared/ui/data-state';
 import { Icon } from '@/shared/ui/icon';
 import { Panel, PanelHead } from '@/shared/ui/panel';
 import { Select } from '@/shared/ui/select';
+import { PAGE_SIZE, ratingLabel, statusFilterLabel } from '../config';
 import { ReviewsSkeleton } from './ReviewsSkeleton';
 import './reviews.css';
-
-const PAGE_SIZE = 20;
-
-const statusFilterLabel: Record<ReviewStatus, string> = {
-  new: 'Новые',
-  in_progress: 'В работе',
-  done: 'Обработанные',
-};
-
-const ratingLabel = ['1 звезда', '2 звезды', '3 звезды', '4 звезды', '5 звёзд'];
 
 export function Reviews() {
   const user = useSession();
@@ -39,7 +30,16 @@ export function Reviews() {
 
   const companies = useCompanies(user.role === 'admin');
   const branches = useBranches({ companyId });
-  const reviews = useReviews({ companyId, branchId, rating, status, from, to, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE });
+  const reviews = useReviews({
+    companyId,
+    branchId,
+    rating,
+    status,
+    from,
+    to,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
+  });
 
   const total = reviews.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -65,7 +65,10 @@ export function Reviews() {
               value={companyId ?? ''}
               onChange={(value) => update({ companyId: value, branchId: null, page: null })}
               disabled={!companies.data}
-              options={[{ value: '', label: 'Все компании' }, ...(companies.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))]}
+              options={[
+                { value: '', label: 'Все компании' },
+                ...(companies.data ?? []).map((company) => ({ value: String(company.id), label: company.name })),
+              ]}
             />
           )}
           <Select
@@ -74,19 +77,28 @@ export function Reviews() {
             value={branchId ?? ''}
             onChange={(value) => setFilter('branchId', value)}
             disabled={!branches.data}
-            options={[{ value: '', label: 'Все филиалы' }, ...(branches.data ?? []).map((b) => ({ value: String(b.id), label: b.name }))]}
+            options={[
+              { value: '', label: 'Все филиалы' },
+              ...(branches.data ?? []).map((branch) => ({ value: String(branch.id), label: branch.name })),
+            ]}
           />
           <Select
             label="Оценка"
             value={rating ?? ''}
             onChange={(value) => setFilter('rating', value)}
-            options={[{ value: '', label: 'Все оценки' }, ...ratingLabel.map((label, i) => ({ value: String(i + 1), label }))]}
+            options={[
+              { value: '', label: 'Все оценки' },
+              ...ratingLabel.map((label, index) => ({ value: String(index + 1), label })),
+            ]}
           />
           <Select
             label="Статус"
             value={status ?? ''}
             onChange={(value) => setFilter('status', value)}
-            options={[{ value: '', label: 'Все статусы' }, ...Object.entries(statusFilterLabel).map(([value, label]) => ({ value, label }))]}
+            options={[
+              { value: '', label: 'Все статусы' },
+              ...Object.entries(statusFilterLabel).map(([value, label]) => ({ value, label })),
+            ]}
           />
         </div>
       </Panel>
@@ -96,10 +108,14 @@ export function Reviews() {
           state={reviews}
           notFound="Филиал не найден"
           skeleton={<ReviewsSkeleton />}
-          onReset={() => update({ companyId: null, branchId: null, rating: null, status: null, from: null, to: null, page: null })}>
+          onReset={() =>
+            update({ companyId: null, branchId: null, rating: null, status: null, from: null, to: null, page: null })
+          }
+        >
           {(data) => {
             if (pageOutOfRange) return null;
             if (data.items.length === 0) return <EmptyState>Отзывов не найдено</EmptyState>;
+
             return (
               <>
                 <ul className="rv-list stagger">

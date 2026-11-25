@@ -46,7 +46,7 @@ export function Select({
   const [active, setActive] = useState(0);
   const [up, setUp] = useState(false);
 
-  const selectedIndex = options.findIndex((o) => o.value === value);
+  const selectedIndex = options.findIndex((option) => option.value === value);
   const selected = options[selectedIndex];
 
   function show(index = selectedIndex) {
@@ -58,58 +58,71 @@ export function Select({
   function choose(index: number) {
     setOpen(false);
     const option = options[index];
+
     if (option && option.value !== value) onChange(option.value);
   }
 
   function findByText(char: string) {
-    const t = typeahead.current;
-    window.clearTimeout(t.timer);
-    t.timer = window.setTimeout(() => (t.text = ''), 500);
-    t.text = t.text === char ? char : t.text + char;
-    const start = open ? active + (t.text.length === 1 ? 1 : 0) : Math.max(0, selectedIndex) + 1;
+    const search = typeahead.current;
+
+    window.clearTimeout(search.timer);
+    search.timer = window.setTimeout(() => (search.text = ''), 500);
+    search.text = search.text === char ? char : search.text + char;
+    const start = open ? active + (search.text.length === 1 ? 1 : 0) : Math.max(0, selectedIndex) + 1;
     const ordered = [...options.slice(start), ...options.slice(0, start)];
-    const match = ordered.find((o) => o.label.toLowerCase().startsWith(t.text));
+    const match = ordered.find((option) => option.label.toLowerCase().startsWith(search.text));
+
     return match ? options.indexOf(match) : -1;
   }
 
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (disabled) return;
     const last = options.length - 1;
+
     const move = (index: number) => {
-      e.preventDefault();
+      event.preventDefault();
       if (open) setActive(Math.min(last, Math.max(0, index)));
       else show(Math.min(last, Math.max(0, index)));
     };
 
     if (!open) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') return move(selectedIndex < 0 ? 0 : selectedIndex);
-      if (e.key === 'ArrowUp') return move(selectedIndex < 0 ? 0 : selectedIndex);
-      if (e.key === 'Home') return move(0);
-      if (e.key === 'End') return move(last);
+      if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ')
+        return move(selectedIndex < 0 ? 0 : selectedIndex);
+      if (event.key === 'ArrowUp') return move(selectedIndex < 0 ? 0 : selectedIndex);
+      if (event.key === 'Home') return move(0);
+      if (event.key === 'End') return move(last);
     } else {
-      if (e.altKey && e.key === 'ArrowUp') {
-        e.preventDefault();
+      if (event.altKey && event.key === 'ArrowUp') {
+        event.preventDefault();
+
         return choose(active);
       }
-      if (e.key === 'ArrowDown') return move(active + 1);
-      if (e.key === 'ArrowUp') return move(active - 1);
-      if (e.key === 'Home') return move(0);
-      if (e.key === 'End') return move(last);
-      if (e.key === 'PageDown') return move(active + PAGE_STEP);
-      if (e.key === 'PageUp') return move(active - PAGE_STEP);
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
+
+      if (event.key === 'ArrowDown') return move(active + 1);
+      if (event.key === 'ArrowUp') return move(active - 1);
+      if (event.key === 'Home') return move(0);
+      if (event.key === 'End') return move(last);
+      if (event.key === 'PageDown') return move(active + PAGE_STEP);
+      if (event.key === 'PageUp') return move(active - PAGE_STEP);
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+
         return choose(active);
       }
-      if (e.key === 'Escape') {
-        e.preventDefault();
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+
         return setOpen(false);
       }
-      if (e.key === 'Tab') return choose(active);
+
+      if (event.key === 'Tab') return choose(active);
     }
 
-    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== ' ') {
-      const index = findByText(e.key.toLowerCase());
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== ' ') {
+      const index = findByText(event.key.toLowerCase());
+
       if (index >= 0) move(index);
     }
   }
@@ -118,6 +131,7 @@ export function Select({
     if (!open) return;
     const trigger = triggerRef.current!.getBoundingClientRect();
     const below = window.innerHeight - trigger.bottom;
+
     setUp(below < listRef.current!.offsetHeight + 16 && trigger.top > below);
   }, [open]);
 
@@ -127,10 +141,13 @@ export function Select({
 
   useEffect(() => {
     if (!open) return;
-    const close = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+
+    const close = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
+
     document.addEventListener('pointerdown', close);
+
     return () => document.removeEventListener('pointerdown', close);
   }, [open]);
 
@@ -163,7 +180,9 @@ export function Select({
           onBlur={() => setOpen(false)}
         >
           {selected?.icon && <Icon name={selected.icon} size={18} />}
-          <span className={selected ? 'select-value' : 'select-value select-placeholder'}>{selected?.label ?? placeholder}</span>
+          <span className={selected ? 'select-value' : 'select-value select-placeholder'}>
+            {selected?.label ?? placeholder}
+          </span>
           <span className="select-chevron">
             <Icon name="chevronDown" />
           </span>
@@ -177,23 +196,23 @@ export function Select({
           className="select-list popover"
           data-open={open}
           data-up={up}
-          onMouseDown={(e) => e.preventDefault()}
+          onMouseDown={(event) => event.preventDefault()}
         >
-          {options.map((o, i) => (
+          {options.map((option, index) => (
             <li
-              key={o.value}
-              id={`${id}-${i}`}
+              key={option.value}
+              id={`${id}-${index}`}
               role="option"
-              aria-selected={i === selectedIndex}
-              className={i === active ? 'select-option is-active' : 'select-option'}
-              onPointerMove={() => i !== active && setActive(i)}
-              onClick={() => choose(i)}
+              aria-selected={index === selectedIndex}
+              className={index === active ? 'select-option is-active' : 'select-option'}
+              onPointerMove={() => index !== active && setActive(index)}
+              onClick={() => choose(index)}
             >
-              {o.icon && <Icon name={o.icon} size={18} />}
-              <span className="select-option-text" title={o.label}>
-                {o.label}
+              {option.icon && <Icon name={option.icon} size={18} />}
+              <span className="select-option-text" title={option.label}>
+                {option.label}
               </span>
-              {i === selectedIndex && (
+              {index === selectedIndex && (
                 <span className="select-check">
                   <Icon name="check" size={18} />
                 </span>

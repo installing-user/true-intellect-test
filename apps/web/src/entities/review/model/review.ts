@@ -1,17 +1,7 @@
+import type { Review, ReviewStatus } from 'contracts';
 import type { IconName } from '@/shared/ui/icon';
 
-export type ReviewStatus = 'new' | 'in_progress' | 'done';
-
-export interface Review {
-  id: number;
-  branchId: number;
-  branchName: string;
-  authorName: string;
-  rating: number;
-  text: string;
-  status: ReviewStatus;
-  publishedAt: string;
-}
+export type { Review, ReviewStatus };
 
 export const statusLabel: Record<ReviewStatus, string> = {
   new: 'Новый',

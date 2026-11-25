@@ -7,21 +7,15 @@ import { useCompanies } from '@/entities/company';
 import { useSession } from '@/entities/session';
 import { CompanyField, CompanyOptions } from '@/features/select-company';
 import { plural, pluralForm, shiftDate, useUrlFilters } from '@/shared/lib';
-import type { PluralForms } from '@/shared/lib';
 import { LineChart } from '@/shared/ui/chart';
 import { DataState, StateMessage } from '@/shared/ui/data-state';
 import { DatePicker } from '@/shared/ui/date-picker';
 import { Icon } from '@/shared/ui/icon';
 import { Panel, PanelHead } from '@/shared/ui/panel';
 import { Select } from '@/shared/ui/select';
+import { branchForms, companyForms, MAX_DAY, MIN_DAY, presets } from '../config';
 import { BranchesSkeleton, ChartSkeleton, MetricsSkeleton } from './DashboardSkeleton';
 import './dashboard.css';
-
-const companyForms: PluralForms = ['компания', 'компании', 'компаний'];
-const branchForms: PluralForms = ['филиал', 'филиала', 'филиалов'];
-const presets = [7, 30, 90];
-const MIN_DAY = '2000-01-01';
-const MAX_DAY = '2100-12-31';
 
 export function Dashboard() {
   const user = useSession();
@@ -45,10 +39,11 @@ export function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
   const activeFrom = from ?? period?.from;
   const activeTo = to ?? period?.to;
-  const selectedCompany = companies.data?.find((c) => String(c.id) === companyId);
+  const selectedCompany = companies.data?.find((company) => String(company.id) === companyId);
 
   function choosePreset(days: number) {
     const end = to ?? period?.to ?? today;
+
     update({ from: shiftDate(end, 1 - days), to: end });
   }
 
@@ -61,14 +56,20 @@ export function Dashboard() {
     setCompanyOpen(false);
   }
 
-  function branchRow(b: Branch) {
-    const selected = String(b.id) === branchId;
+  function branchRow(branch: Branch) {
+    const selected = String(branch.id) === branchId;
+
     return (
-      <li key={b.id}>
-        <button type="button" className="dash-row" aria-pressed={selected} onClick={() => update({ branchId: String(b.id) })}>
+      <li key={branch.id}>
+        <button
+          type="button"
+          className="dash-row"
+          aria-pressed={selected}
+          onClick={() => update({ branchId: String(branch.id) })}
+        >
           <span className="dash-row-text">
-            <span className="dash-row-name">{b.name}</span>
-            <span className="dash-row-sub">{b.address}</span>
+            <span className="dash-row-name">{branch.name}</span>
+            <span className="dash-row-sub">{branch.address}</span>
           </span>
           {selected && <Icon name="check" size={20} />}
         </button>
@@ -99,10 +100,12 @@ export function Dashboard() {
                     companies={companies.data}
                     selectedId={companyId}
                     allHint={
-                      allBranches.data && `${plural(companies.data.length, companyForms)} · ${plural(allBranches.data.length, branchForms)}`
+                      allBranches.data &&
+                      `${plural(companies.data.length, companyForms)} · ${plural(allBranches.data.length, branchForms)}`
                     }
-                    hint={(c) => {
-                      const count = allBranches.data?.filter((b) => b.companyId === c.id).length;
+                    hint={(company) => {
+                      const count = allBranches.data?.filter((branch) => branch.companyId === company.id).length;
+
                       return count === undefined ? undefined : plural(count, branchForms);
                     }}
                     onSelect={chooseCompany}
@@ -118,7 +121,10 @@ export function Dashboard() {
             value={branchId ?? ''}
             onChange={(value) => update({ branchId: value })}
             disabled={!branches.data}
-            options={[{ value: '', label: 'Все филиалы' }, ...(branches.data ?? []).map((b) => ({ value: String(b.id), label: b.name }))]}
+            options={[
+              { value: '', label: 'Все филиалы' },
+              ...(branches.data ?? []).map((branch) => ({ value: String(branch.id), label: branch.name })),
+            ]}
           />
           <DatePicker
             className="dash-field-date"
@@ -145,7 +151,9 @@ export function Dashboard() {
               <button
                 key={days}
                 type="button"
-                aria-pressed={activeFrom !== undefined && activeTo !== undefined && shiftDate(activeTo, 1 - days) === activeFrom}
+                aria-pressed={
+                  activeFrom !== undefined && activeTo !== undefined && shiftDate(activeTo, 1 - days) === activeFrom
+                }
                 onClick={() => choosePreset(days)}
               >
                 {days} дней
@@ -211,11 +219,11 @@ export function Dashboard() {
             skeleton={<ChartSkeleton />}
           >
             {(data) =>
-              data.timeseries.some((d) => d[metric] > 0) ? (
+              data.timeseries.some((point) => point[metric] > 0) ? (
                 <LineChart
                   label={counters[metric]}
-                  points={data.timeseries.map((d) => ({ date: d.date, value: d[metric] }))}
-                  unit={(n) => pluralForm(n, counterUnits[metric])}
+                  points={data.timeseries.map((point) => ({ date: point.date, value: point[metric] }))}
+                  unit={(count) => pluralForm(count, counterUnits[metric])}
                 />
               ) : (
                 <StateMessage>Нет данных за период</StateMessage>
@@ -229,18 +237,19 @@ export function Dashboard() {
             <h2 id="branches-title">Филиалы</h2>
           </PanelHead>
           <DataState state={branches} notFound="Компания не найдена" skeleton={<BranchesSkeleton />}>
-            {(data) =>
-              data.length === 0 ? (
-                <StateMessage>Филиалов нет</StateMessage>
-              ) : grouped ? (
+            {(data) => {
+              if (data.length === 0) return <StateMessage>Филиалов нет</StateMessage>;
+
+              return grouped ? (
                 <div className="dash-groups">
-                  {companies.data!.map((c) => {
-                    const items = data.filter((b) => b.companyId === c.id);
+                  {companies.data!.map((company) => {
+                    const items = data.filter((branch) => branch.companyId === company.id);
+
                     return (
                       items.length > 0 && (
-                        <div key={c.id} className="dash-group">
+                        <div key={company.id} className="dash-group">
                           <h3>
-                            <span>{c.name}</span>
+                            <span>{company.name}</span>
                             <span>{plural(items.length, branchForms)}</span>
                           </h3>
                           <ul className="dash-list">{items.map(branchRow)}</ul>
@@ -251,8 +260,8 @@ export function Dashboard() {
                 </div>
               ) : (
                 <ul className="dash-list">{data.map(branchRow)}</ul>
-              )
-            }
+              );
+            }}
           </DataState>
         </Panel>
       </div>

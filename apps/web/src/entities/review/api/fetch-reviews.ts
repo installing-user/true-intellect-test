@@ -2,7 +2,7 @@
 
 import { useApi } from '@/shared/api';
 import { queryString } from '@/shared/lib';
-import type { Review } from '../model/review';
+import type { ReviewPage } from 'contracts';
 
 export interface ReviewFilters {
   companyId: string | null;
@@ -16,7 +16,5 @@ export interface ReviewFilters {
 }
 
 export function useReviews({ limit, offset, ...filters }: ReviewFilters) {
-  return useApi<{ items: Review[]; total: number }>(
-    `/api/reviews${queryString({ ...filters, limit: String(limit), offset: String(offset) })}`,
-  );
+  return useApi<ReviewPage>(`/api/reviews${queryString({ ...filters, limit: String(limit), offset: String(offset) })}`);
 }

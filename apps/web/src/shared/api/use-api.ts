@@ -18,20 +18,29 @@ export function useApi<T>(url: string | null) {
   useEffect(() => {
     if (url === null) return;
     const controller = new AbortController();
-    setState((s) => ({ data: s.data, loading: true }));
+
+    setState((prev) => ({ data: prev.data, loading: true }));
     apiFetch<T>(url, { signal: controller.signal }).then(
       (data) => setState({ data, loading: false }),
       (error: unknown) => {
         if (controller.signal.aborted) return;
+
         if (error instanceof ApiError && error.status === 401) {
           router.replace('/login');
+
           return;
         }
+
         setState({ error: error instanceof ApiError ? error : new ApiError(0, String(error)), loading: false });
       },
     );
+
     return () => controller.abort();
   }, [url, attempt, router]);
 
-  return { ...state, refetching: state.loading && state.data !== undefined, retry: () => setAttempt((n) => n + 1) };
+  return {
+    ...state,
+    refetching: state.loading && state.data !== undefined,
+    retry: () => setAttempt((current) => current + 1),
+  };
 }

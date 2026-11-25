@@ -1,12 +1,8 @@
+import type { AnalyticsReport, Counter } from 'contracts';
 import type { PluralForms } from '@/shared/lib';
 
-export type Counter = 'views' | 'siteClicks' | 'calls' | 'routes';
-
-export interface Analytics {
-  period: { from: string; to: string };
-  summary: Record<Counter | 'reviewsCount', number> & { avgRating: number | null };
-  timeseries: ({ date: string } & Record<Counter, number>)[];
-}
+export type { Counter };
+export type Analytics = AnalyticsReport;
 
 export const counters: Record<Counter, string> = {
   views: 'Просмотры карточек',

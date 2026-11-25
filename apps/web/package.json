@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3100",
+    "dev:mocks": "node scripts/mocks.mjs dev",
+    "build:mocks": "node scripts/mocks.mjs build",
+    "start:mocks": "node scripts/mocks.mjs start",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3100"
   },
@@ -16,6 +19,9 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "contracts": "0.1.0",
+    "msw": "3.0.7",
+    "openapi-msw": "2.1.1",
     "typescript": "5.9.3"
   }
 }

@@ -5,8 +5,8 @@ export function ReviewsSkeleton() {
   return (
     <SkeletonRegion>
       <ul className="rv-list">
-        {Array.from({ length: 6 }, (_, i) => (
-          <ReviewCardSkeleton key={i} />
+        {Array.from({ length: 6 }, (_, index) => (
+          <ReviewCardSkeleton key={index} />
         ))}
       </ul>
       <div className="rv-pager" aria-hidden="true">

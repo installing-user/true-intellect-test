@@ -1,5 +1,6 @@
 'use client';
 
+import type { UpdateReviewStatusRequest } from 'contracts';
 import { useEffect, useState } from 'react';
 import { type Review, type ReviewStatus, statusIcon, statusLabel } from '@/entities/review';
 import { ApiError, apiFetch } from '@/shared/api';
@@ -17,27 +18,33 @@ export function ReviewStatusSelect({ review }: { review: Review }) {
   useEffect(() => {
     if (!saved) return;
     const timer = setTimeout(() => setSaved(false), 1200);
+
     return () => clearTimeout(timer);
   }, [saved]);
 
   async function change(next: ReviewStatus) {
     const previous = status;
+
     setStatus(next);
     setSaving(true);
     setError(null);
     setSaved(false);
+
     try {
       const updated = await apiFetch<Review>(`/api/reviews/${review.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: next }),
+        body: JSON.stringify({ status: next } satisfies UpdateReviewStatusRequest),
       });
+
       setStatus(updated.status);
       setSaved(true);
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
         window.location.assign('/login');
+
         return;
       }
+
       setStatus(previous);
       setError('Не удалось сохранить статус');
       setShake(true);
@@ -47,7 +54,7 @@ export function ReviewStatusSelect({ review }: { review: Review }) {
   }
 
   return (
-    <div className="review-status" onAnimationEnd={(e) => e.animationName === 'shake' && setShake(false)}>
+    <div className="review-status" onAnimationEnd={(event) => event.animationName === 'shake' && setShake(false)}>
       {saving && (
         <span className="review-saving" aria-live="polite">
           <Spinner size={16} />
@@ -73,7 +80,11 @@ export function ReviewStatusSelect({ review }: { review: Review }) {
         value={status}
         disabled={saving}
         onChange={(value) => change(value as ReviewStatus)}
-        options={(Object.keys(statusLabel) as ReviewStatus[]).map((s) => ({ value: s, label: statusLabel[s], icon: statusIcon[s] }))}
+        options={(Object.keys(statusLabel) as ReviewStatus[]).map((status) => ({
+          value: status,
+          label: statusLabel[status],
+          icon: statusIcon[status],
+        }))}
       />
     </div>
   );

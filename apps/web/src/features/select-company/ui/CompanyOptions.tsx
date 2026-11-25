@@ -25,10 +25,13 @@ export function CompanyOptions({ companies, selectedId, allHint, hint, open, onS
     setQuery('');
     searchRef.current?.focus();
     const control = rootRef.current!.parentElement!;
-    const close = (e: PointerEvent) => {
-      if (!control.contains(e.target as Node)) onClose();
+
+    const close = (event: PointerEvent) => {
+      if (!control.contains(event.target as Node)) onClose();
     };
+
     document.addEventListener('pointerdown', close);
+
     return () => document.removeEventListener('pointerdown', close);
   }, [open]); // onClose is a new closure on every render, so it stays out of the deps
 
@@ -40,8 +43,9 @@ export function CompanyOptions({ companies, selectedId, allHint, hint, open, onS
     onSelect(id);
     focusTrigger();
   }
+
   const needle = query.trim().toLowerCase();
-  const visible = companies.filter((c) => c.name.toLowerCase().includes(needle));
+  const visible = companies.filter((company) => company.name.toLowerCase().includes(needle));
 
   return (
     <div
@@ -49,8 +53,10 @@ export function CompanyOptions({ companies, selectedId, allHint, hint, open, onS
       id="company-picker"
       className="company-picker popover"
       data-open={open}
-      onKeyDown={(e) => e.key === 'Escape' && (onClose(), focusTrigger())}
-      onBlur={(e) => e.relatedTarget && !e.currentTarget.parentElement!.contains(e.relatedTarget) && onClose()}
+      onKeyDown={(event) => event.key === 'Escape' && (onClose(), focusTrigger())}
+      onBlur={(event) =>
+        event.relatedTarget && !event.currentTarget.parentElement!.contains(event.relatedTarget) && onClose()
+      }
     >
       <div className="company-search">
         <span className="company-search-icon">
@@ -62,7 +68,7 @@ export function CompanyOptions({ companies, selectedId, allHint, hint, open, onS
           placeholder="Найти компанию"
           aria-label="Найти компанию"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
         />
       </div>
       <div className="company-options" role="group" aria-label="Компании">
@@ -73,14 +79,21 @@ export function CompanyOptions({ companies, selectedId, allHint, hint, open, onS
           </span>
           {!selectedId && <Icon name="check" size={18} />}
         </button>
-        {visible.map((c) => {
-          const selected = String(c.id) === selectedId;
-          const sub = hint(c);
+        {visible.map((company) => {
+          const selected = String(company.id) === selectedId;
+          const sub = hint(company);
+
           return (
-            <button key={c.id} type="button" aria-pressed={selected} className="company-option" onClick={() => choose(String(c.id))}>
+            <button
+              key={company.id}
+              type="button"
+              aria-pressed={selected}
+              className="company-option"
+              onClick={() => choose(String(company.id))}
+            >
               <span className="company-option-text">
-                <span className="company-option-name" title={c.name}>
-                  {c.name}
+                <span className="company-option-name" title={company.name}>
+                  {company.name}
                 </span>
                 {sub !== undefined && <span className="company-option-sub">{sub}</span>}
               </span>

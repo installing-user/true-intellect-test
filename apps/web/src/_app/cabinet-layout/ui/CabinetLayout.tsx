@@ -18,6 +18,7 @@ export function CabinetLayout({ children }: { children: ReactNode }) {
 
   if (!me.data) {
     if (!me.error) return <CabinetSkeleton />;
+
     return (
       <main className="page">
         <ErrorState className="panel" message="Не удалось проверить сессию." onRetry={me.retry} />

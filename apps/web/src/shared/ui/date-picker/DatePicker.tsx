@@ -4,6 +4,21 @@ import { type ClipboardEvent, type KeyboardEvent, useEffect, useId, useLayoutEff
 import { Icon } from '@/shared/ui/icon';
 import { Select } from '@/shared/ui/select';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { EDGE, EDGE_MOBILE, POP_MOBILE_MIN, POP_WIDTH } from './config';
+import {
+  addDays,
+  addMonths,
+  clamp,
+  dayLabel,
+  fromDigits,
+  mask,
+  monthNames,
+  parse,
+  toDigits,
+  toIso,
+  weekday,
+  weekdayNames,
+} from './lib';
 import './date-picker.css';
 
 interface DatePickerProps {
@@ -15,43 +30,6 @@ interface DatePickerProps {
   anchor?: string;
   loading?: boolean;
   className?: string;
-}
-
-const DAY_MS = 86_400_000;
-const POP_WIDTH = 336;
-const POP_MOBILE_MIN = 296;
-const EDGE = 8;
-const EDGE_MOBILE = 4;
-
-const toIso = (time: number) => new Date(time).toISOString().slice(0, 10);
-const parse = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
-const addDays = (iso: string, days: number) => toIso(parse(iso) + days * DAY_MS);
-const weekday = (iso: string) => (new Date(parse(iso)).getUTCDay() + 6) % 7;
-const clamp = (iso: string, min: string, max: string) => (iso < min ? min : iso > max ? max : iso);
-const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
-
-function addMonths(iso: string, months: number) {
-  const [y, m, d] = iso.split('-').map(Number);
-  const last = new Date(Date.UTC(y, m + months, 0)).getUTCDate();
-  return toIso(Date.UTC(y, m - 1 + months, Math.min(d, last)));
-}
-
-const monthNames = Array.from({ length: 12 }, (_, i) =>
-  capitalize(new Intl.DateTimeFormat('ru', { month: 'long', timeZone: 'UTC' }).format(Date.UTC(2000, i, 1))),
-);
-const weekdayNames = Array.from({ length: 7 }, (_, i) =>
-  capitalize(new Intl.DateTimeFormat('ru', { weekday: 'short', timeZone: 'UTC' }).format(Date.UTC(2024, 0, 1 + i))),
-);
-const dayLabel = new Intl.DateTimeFormat('ru', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-
-const mask = (digits: string) => [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean).join('.');
-const toDigits = (iso: string) => iso.slice(8, 10) + iso.slice(5, 7) + iso.slice(0, 4);
-
-function fromDigits(digits: string) {
-  if (digits.length !== 8) return null;
-  const iso = `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
-  const time = parse(iso);
-  return Number.isNaN(time) || toIso(time) !== iso ? null : iso;
 }
 
 export function DatePicker({ label, value, min, max, onCommit, anchor, loading = false, className }: DatePickerProps) {
@@ -74,14 +52,14 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
   const view = focusDay.slice(0, 8) + '01';
   const viewYear = Number(view.slice(0, 4));
   const start = addDays(view, -weekday(view));
-  const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));
+  const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
   const shown = draft ?? (value ? mask(toDigits(value)) : '');
   const committable = (iso: string | null) => iso !== null && iso >= min && iso <= max;
   const invalid = draft !== null && draft.length === 10 && !committable(fromDigits(draft.replace(/\D/g, '')));
   const edge = hover ?? value;
   const [rangeFrom, rangeTo] = anchor && edge ? [edge, anchor].sort() : ['', ''];
   const minYear = Number(min.slice(0, 4));
-  const years = Array.from({ length: Number(max.slice(0, 4)) - minYear + 1 }, (_, i) => String(minYear + i));
+  const years = Array.from({ length: Number(max.slice(0, 4)) - minYear + 1 }, (_, index) => String(minYear + index));
 
   function moveTo(iso: string, grid = false) {
     setFocusDay(clamp(iso, min, max));
@@ -109,34 +87,37 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
 
   function type(digits: string, caretDigits = digits.length) {
     const iso = fromDigits(digits);
+
     setDraft(mask(digits));
     caret.current = caretDigits;
+
     if (iso && committable(iso)) {
       setFocusDay(iso);
       if (iso !== value) onCommit(iso);
     }
   }
 
-  function paste(e: ClipboardEvent<HTMLInputElement>) {
-    const text = e.clipboardData.getData('text').trim();
+  function paste(event: ClipboardEvent<HTMLInputElement>) {
+    const text = event.clipboardData.getData('text').trim();
     const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
     const digits = iso ? iso[3] + iso[2] + iso[1] : text.replace(/\D/g, '');
+
     if (!iso && digits.length !== 8) return;
-    e.preventDefault();
+    event.preventDefault();
     type(digits);
   }
 
-  function onInputKey(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.altKey && e.key === 'ArrowDown') {
-      e.preventDefault();
+  function onInputKey(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.altKey && event.key === 'ArrowDown') {
+      event.preventDefault();
       show(true);
-    } else if (e.key === 'Escape' && open) {
-      e.preventDefault();
+    } else if (event.key === 'Escape' && open) {
+      event.preventDefault();
       close(false);
     }
   }
 
-  function onGridKey(e: KeyboardEvent<HTMLTableElement>) {
+  function onGridKey(event: KeyboardEvent<HTMLTableElement>) {
     const step: Record<string, () => string> = {
       ArrowLeft: () => addDays(focusDay, -1),
       ArrowRight: () => addDays(focusDay, 1),
@@ -144,36 +125,41 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
       ArrowDown: () => addDays(focusDay, 7),
       Home: () => addDays(focusDay, -weekday(focusDay)),
       End: () => addDays(focusDay, 6 - weekday(focusDay)),
-      PageUp: () => addMonths(focusDay, e.shiftKey ? -12 : -1),
-      PageDown: () => addMonths(focusDay, e.shiftKey ? 12 : 1),
+      PageUp: () => addMonths(focusDay, event.shiftKey ? -12 : -1),
+      PageDown: () => addMonths(focusDay, event.shiftKey ? 12 : 1),
     };
-    if (step[e.key]) {
-      e.preventDefault();
-      moveTo(step[e.key](), true);
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
+
+    if (step[event.key]) {
+      event.preventDefault();
+      moveTo(step[event.key](), true);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
       choose(focusDay);
     }
   }
 
-  function onDialogKey(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'Escape' && !e.defaultPrevented) {
-      e.preventDefault();
+  function onDialogKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape' && !event.defaultPrevented) {
+      event.preventDefault();
       close(true);
+
       return;
     }
-    if (e.key !== 'Tab') return;
+
+    if (event.key !== 'Tab') return;
     const items = [...popRef.current!.querySelectorAll<HTMLElement>('button, [tabindex="0"]')];
-    const edgeItem = e.shiftKey ? items[0] : items[items.length - 1];
+    const edgeItem = event.shiftKey ? items[0] : items[items.length - 1];
+
     if (document.activeElement === edgeItem) {
-      e.preventDefault();
-      (e.shiftKey ? items[items.length - 1] : items[0]).focus();
+      event.preventDefault();
+      (event.shiftKey ? items[items.length - 1] : items[0]).focus();
     }
   }
 
   useLayoutEffect(() => {
     if (caret.current === null || !inputRef.current) return;
     let pos = 0;
+
     for (let seen = 0; pos < shown.length && seen < caret.current; pos++) if (/\d/.test(shown[pos])) seen++;
     inputRef.current.setSelectionRange(pos, pos);
     caret.current = null;
@@ -187,10 +173,12 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
     const edge = vw <= 480 ? EDGE_MOBILE : EDGE;
     const width = Math.min(vw - 2 * edge, Math.max(control.width, vw <= 480 ? POP_MOBILE_MIN : POP_WIDTH));
     const left = Math.min(Math.max(control.left, edge), vw - edge - width) - control.left;
+
     pop.style.width = `${width}px`;
     pop.style.left = `${left}px`;
     pop.style.right = 'auto';
     const below = window.innerHeight - control.bottom;
+
     pop.dataset.up = String(below < pop.offsetHeight + 16 && control.top > below);
   }, [open]);
 
@@ -202,10 +190,13 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
 
   useEffect(() => {
     if (!open) return;
-    const outside = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) close(false);
+
+    const outside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) close(false);
     };
+
     document.addEventListener('pointerdown', outside);
+
     return () => document.removeEventListener('pointerdown', outside);
   }, [open]);
 
@@ -213,8 +204,8 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
     <div
       ref={rootRef}
       className={['field date-picker', className].filter(Boolean).join(' ')}
-      onBlur={(e) => {
-        if (open && e.relatedTarget && !rootRef.current?.contains(e.relatedTarget)) close(false);
+      onBlur={(event) => {
+        if (open && event.relatedTarget && !rootRef.current?.contains(event.relatedTarget)) close(false);
       }}
     >
       <label htmlFor={inputId}>{label}</label>
@@ -231,9 +222,13 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls={popId}
-          onChange={(e) => {
-            const raw = e.target.value;
-            type(raw.replace(/\D/g, '').slice(0, 8), raw.slice(0, e.target.selectionStart ?? raw.length).replace(/\D/g, '').length);
+          onChange={(event) => {
+            const raw = event.target.value;
+
+            type(
+              raw.replace(/\D/g, '').slice(0, 8),
+              raw.slice(0, event.target.selectionStart ?? raw.length).replace(/\D/g, '').length,
+            );
           }}
           onPaste={paste}
           onKeyDown={onInputKey}
@@ -244,7 +239,9 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
         <button
           type="button"
           className="dp-toggle"
-          aria-label={value ? `Выбрать дату «${label}», выбрано ${dayLabel.format(parse(value))}` : `Выбрать дату «${label}»`}
+          aria-label={
+            value ? `Выбрать дату «${label}», выбрано ${dayLabel.format(parse(value))}` : `Выбрать дату «${label}»`
+          }
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls={popId}
@@ -276,8 +273,8 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
               className="dp-month"
               aria-label="Месяц"
               value={String(Number(view.slice(5, 7)) - 1)}
-              options={monthNames.map((name, i) => ({ value: String(i), label: name }))}
-              onChange={(m) => moveTo(addMonths(focusDay, Number(m) - Number(view.slice(5, 7)) + 1))}
+              options={monthNames.map((name, index) => ({ value: String(index), label: name }))}
+              onChange={(month) => moveTo(addMonths(focusDay, Number(month) - Number(view.slice(5, 7)) + 1))}
             />
             <Select
               className="dp-year"
@@ -299,7 +296,13 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
           <h2 id={titleId} className="sr-only" aria-live="polite">
             {monthNames[Number(view.slice(5, 7)) - 1]} {viewYear}
           </h2>
-          <table role="grid" aria-labelledby={titleId} className="dp-grid" onKeyDown={onGridKey} onPointerLeave={() => setHover(null)}>
+          <table
+            role="grid"
+            aria-labelledby={titleId}
+            className="dp-grid"
+            onKeyDown={onGridKey}
+            onPointerLeave={() => setHover(null)}
+          >
             <thead>
               <tr>
                 {weekdayNames.map((name) => (
@@ -320,6 +323,7 @@ export function DatePicker({ label, value, min, max, onCommit, anchor, loading =
                       day === rangeFrom && 'range-start',
                       day === rangeTo && 'range-end',
                     ];
+
                     return (
                       <td
                         key={day}

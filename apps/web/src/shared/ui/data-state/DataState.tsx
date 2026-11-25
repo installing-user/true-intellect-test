@@ -62,6 +62,7 @@ export function DataState<T>({
   children: (data: T) => ReactNode;
 }) {
   if (state.loading && state.data === undefined) return skeleton ?? <SkeletonBlock />;
+
   if (state.error?.status === 404) {
     return (
       <div className="state" role="alert">
@@ -73,9 +74,12 @@ export function DataState<T>({
       </div>
     );
   }
+
   // 400 is a validation error: the server message says what to fix and a retry cannot help
   if (state.error?.status === 400) return <ErrorState message={state.error.message} onReset={onReset} />;
-  if (state.error || state.data === undefined) return <ErrorState message="Не удалось загрузить данные." onRetry={state.retry} />;
+  if (state.error || state.data === undefined)
+    return <ErrorState message="Не удалось загрузить данные." onRetry={state.retry} />;
+
   return (
     <>
       <div className="data-fade" data-busy={state.refetching || undefined} aria-busy={state.refetching || undefined}>

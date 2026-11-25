@@ -1,4 +1,1 @@
-export interface Company {
-  id: number;
-  name: string;
-}
+export type { Company } from 'contracts';

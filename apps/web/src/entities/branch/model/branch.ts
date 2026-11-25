@@ -1,6 +1,1 @@
-export interface Branch {
-  id: number;
-  companyId: number;
-  name: string;
-  address: string;
-}
+export type { Branch } from 'contracts';

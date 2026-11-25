@@ -11,7 +11,15 @@ const INVALID_CREDENTIALS = 'Неверный email или пароль';
 function tooManyAttempts(error: ApiError): string {
   const seconds = Number(error.headers?.get('retry-after'));
   const base = 'Слишком много попыток входа.';
+
   return seconds > 0 ? `${base} Попробуйте через ${Math.ceil(seconds / 60)} мин.` : `${base} Попробуйте позже.`;
+}
+
+function loginErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 401) return INVALID_CREDENTIALS;
+  if (error instanceof ApiError && error.status === 429) return tooManyAttempts(error);
+
+  return 'Не удалось войти, попробуйте ещё раз';
 }
 
 export function LoginForm() {
@@ -23,22 +31,18 @@ export function LoginForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+
     setPending(true);
     setError(null);
+
     try {
       await apiFetch('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
       });
       router.replace('/dashboard');
-    } catch (e) {
-      setError(
-        e instanceof ApiError && e.status === 401
-          ? INVALID_CREDENTIALS
-          : e instanceof ApiError && e.status === 429
-            ? tooManyAttempts(e)
-            : 'Не удалось войти, попробуйте ещё раз',
-      );
+    } catch (error) {
+      setError(loginErrorMessage(error));
       setShake(true);
       setPending(false);
     }
@@ -50,7 +54,7 @@ export function LoginForm() {
     <form
       className={shake ? 'login-form shake' : 'login-form'}
       onSubmit={submit}
-      onAnimationEnd={(e) => e.animationName === 'shake' && setShake(false)}
+      onAnimationEnd={(event) => event.animationName === 'shake' && setShake(false)}
     >
       <h1>Вход в кабинет</h1>
       <label>
