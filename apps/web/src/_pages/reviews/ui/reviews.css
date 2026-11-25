@@ -1,0 +1,129 @@
+.rv {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.rv-results {
+  position: relative;
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.rv-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.rv-wide {
+  grid-column: 1 / -1;
+}
+
+.rv-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rv-list .review-card {
+  gap: var(--space-3);
+}
+
+.rv-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 20px;
+}
+
+.rv-count {
+  color: var(--color-text-2);
+  font-size: 15px;
+  line-height: 20px;
+}
+
+@media (max-width: 600px) {
+  .rv-pager {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rv-pager .rv-count {
+    grid-column: 1 / -1;
+    order: 3;
+    text-align: center;
+  }
+
+  .rv-pager .btn {
+    width: 100%;
+    min-width: 0;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 719px) {
+  .rv-branch {
+    order: 1;
+  }
+}
+
+@media (max-width: 400px) {
+  .rv-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1101px) {
+  .rv-filters.rv-filters-admin {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 720px) {
+  .rv-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rv-filters.rv-filters-admin {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rv-wide {
+    grid-column: auto;
+  }
+
+  .rv-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.skel-pager-btn {
+  width: 112px;
+  height: 48px;
+  border-radius: var(--control-radius);
+}
+
+.skel-pager-count {
+  width: 220px;
+  max-width: 100%;
+  height: 14px;
+  margin: 3px 0;
+}
+
+@media (max-width: 600px) {
+  .rv-pager .skel-pager-btn {
+    width: 100%;
+  }
+
+  .rv-pager .skel-pager-count {
+    grid-column: 1 / -1;
+    order: 3;
+    justify-self: center;
+  }
+}
