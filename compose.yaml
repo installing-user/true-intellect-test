@@ -9,11 +9,11 @@ services:
       POSTGRES_PASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${PGPORT:?Set PGPORT in .env}:5432"
+      - '127.0.0.1:${PGPORT:?Set PGPORT in .env}:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 2s
       timeout: 3s
       retries: 15
@@ -31,14 +31,20 @@ services:
       PGPASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
       PGDATABASE: ${PGDATABASE:?Set PGDATABASE in .env}
     restart: unless-stopped
-    command: ["sh", "-c", "node db/migrate.ts && node db/seed.ts --if-empty && exec node dist/main.js"]
+    command: ['sh', '-c', 'node db/migrate.ts && node db/seed.ts --if-empty && exec node dist/main.js']
     ports:
-      - "127.0.0.1:3101:3101"
+      - '127.0.0.1:3101:3101'
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3101/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3101/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -53,15 +59,65 @@ services:
       API_ORIGIN: http://api:3101
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3100:3100"
+      - '127.0.0.1:3100:3100'
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3100/api/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # one-shot: a self-signed certificate for local HTTPS; in production mount a real one at /etc/nginx/tls instead
+  certs:
+    image: postgres:17
+    entrypoint: ['sh', '-c']
+    command:
+      - >-
+        [ -s /tls/fullchain.pem ] || openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 825
+        -subj /CN=localhost -addext subjectAltName=DNS:localhost,IP:127.0.0.1 -addext basicConstraints=critical,CA:FALSE
+        -addext keyUsage=critical,digitalSignature -addext extendedKeyUsage=serverAuth
+        -keyout /tls/privkey.pem -out /tls/fullchain.pem
+        && chown 101:101 /tls/privkey.pem /tls/fullchain.pem && chmod 600 /tls/privkey.pem
+    volumes:
+      - tls:/tls
+
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.28-alpine@sha256:7377697a821c131a924a7105fafbe7414db4e9fcc77a6f08f776f33f141ec3f8
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101
+      - /var/cache/nginx:uid=101,gid=101
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - tls:/etc/nginx/tls:ro
+    ports:
+      - '127.0.0.1:8080:8080'
+      - '127.0.0.1:8443:8443'
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/api/health']
       interval: 3s
       timeout: 3s
       retries: 20
 
 volumes:
   db-data:
+  tls:
